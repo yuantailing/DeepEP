@@ -19,7 +19,7 @@ if __name__ == '__main__':
     include_dirs = ['csrc/']
     library_dirs = []
     nvcc_dlink = []
-    extra_link_args = []
+    extra_link_args = ['-Wl,--version-script,deep_ep_cpp.version', '-Wl,--no-undefined-version']
 
     # NVSHMEM flags
     if disable_nvshmem:
@@ -28,9 +28,8 @@ if __name__ == '__main__':
     else:
         sources.extend(['csrc/kernels/internode.cu', 'csrc/kernels/internode_ll.cu'])
         include_dirs.extend([f'{nvshmem_dir}/include'])
-        library_dirs.extend([f'{nvshmem_dir}/lib'])
-        nvcc_dlink.extend(['-dlink', f'-L{nvshmem_dir}/lib', '-lnvshmem'])
-        extra_link_args.extend(['-l:libnvshmem.a', '-l:nvshmem_bootstrap_uid.so', f'-Wl,-rpath,{nvshmem_dir}/lib'])
+        nvcc_dlink.extend(['-dlink', f'{nvshmem_dir}/lib/libnvshmem.a'])
+        extra_link_args.extend([f'{nvshmem_dir}/lib/libnvshmem.a', f'-Wl,-rpath,{nvshmem_dir}/lib'])
 
     if int(os.getenv('DISABLE_SM90_FEATURES', 0)):
         # Prefer A100

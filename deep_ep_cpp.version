@@ -1,0 +1,4 @@
+{
+  global: PyInit_deep_ep_cpp;
+  local: *;
+};
