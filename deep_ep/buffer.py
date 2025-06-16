@@ -27,7 +27,7 @@ class Buffer:
         runtime: the C++ runtime.
     """
 
-    num_sms: int = 20
+    num_sms: int = 24
 
     def __init__(self, group: Optional[dist.ProcessGroup],
                  num_nvl_bytes: int = 0, num_rdma_bytes: int = 0,
