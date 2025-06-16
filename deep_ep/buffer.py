@@ -31,7 +31,8 @@ class Buffer:
 
     def __init__(self, group: Optional[dist.ProcessGroup],
                  num_nvl_bytes: int = 0, num_rdma_bytes: int = 0,
-                 low_latency_mode: bool = False, num_qps_per_rank: int = 12,
+                 low_latency_mode: bool = False, num_nvl_peers: int = 8,
+                 num_qps_per_rank: int = 12,
                  allow_nvlink_for_low_latency_mode: bool = True,
                  allow_mnnvl: bool = False,
                  comm = None) -> None:
@@ -43,6 +44,7 @@ class Buffer:
             num_nvl_bytes: the buffer size for intranode NVLink communication.
             num_rdma_bytes: the buffer size for internode (also for intranode with low-latency mode) RDMA communication.
             low_latency_mode: whether to enable low-latency mode.
+            num_nvl_peers: the number of devices connected by NVLink. (unused)
             num_qps_per_rank: the number of QPs for RDMA, the low-latency mode requires that this number equals
                 to the number of local experts.
             allow_nvlink_for_low_latency_mode: whether allow NVLink traffic for low-latency mode, you should notice
