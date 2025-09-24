@@ -973,8 +973,8 @@ dispatch(int4* recv_x, float* recv_x_scales, topk_idx_t* recv_topk_idx, float* r
                     auto recv_idx = recv_token_idx * num_topk + lane_id;
 
                     // Transform and write
-                    idx_value = (idx_value >= local_expert_begin and idx_value < local_expert_end) ? idx_value - local_expert_begin : -1;
-                    weight_value = idx_value >= 0 ? weight_value : 0.0f;
+                    idx_value = (idx_value >= local_expert_begin and idx_value < local_expert_end) ? idx_value : num_experts;
+                    weight_value = idx_value < num_experts ? weight_value : 0.0f;
                     st_na_global(recv_topk_idx + recv_idx, idx_value);
                     st_na_global(recv_topk_weights + recv_idx, weight_value);
                 }

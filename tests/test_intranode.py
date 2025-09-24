@@ -110,14 +110,14 @@ def test_main(args: argparse.Namespace, num_sms: int, local_rank: int, num_ranks
                     recv_topk_weights_clone = None
                     if with_topk:
                         # Check `topk_idx`
-                        assert (recv_topk_idx.eq(-1) | ((recv_topk_idx >= 0) & (recv_topk_idx < (num_experts // num_ranks)))).sum().item() == recv_topk_idx.numel()
+                        assert (recv_topk_idx.eq(num_experts) | ((recv_topk_idx >= rank * (num_experts // num_ranks)) & (recv_topk_idx < (rank + 1) * (num_experts // num_ranks)))).sum().item() == recv_topk_idx.numel()
                         for i, count in enumerate(recv_num_tokens_per_expert_list):
-                            assert recv_topk_idx.eq(i).sum().item() == count
+                            assert recv_topk_idx.eq(i + rank * (num_experts // num_ranks)).sum().item() == count
 
                         # Check `topk_weights`
                         recv_topk_weights_clone = recv_topk_weights.clone()
                         if current_x is not x_pure_rand:
-                            recv_topk_weights[recv_topk_idx.eq(-1)] = recv_topk_weights.amax(dim=1, keepdim=True).expand_as(recv_topk_weights)[recv_topk_idx.eq(-1)]
+                            recv_topk_weights[recv_topk_idx.eq(num_experts)] = recv_topk_weights.amax(dim=1, keepdim=True).expand_as(recv_topk_weights)[recv_topk_idx.eq(num_experts)]
                             check_data(recv_topk_weights, rank_prefix_matrix)
 
                     # Test `num_worst_tokens != 0`
@@ -134,7 +134,7 @@ def test_main(args: argparse.Namespace, num_sms: int, local_rank: int, num_ranks
                         assert torch.equal(recv_x, recv_worst_x[:recv_x.size(0)])
                         assert torch.equal(recv_topk_idx, recv_worst_topk_idx[:recv_x.size(0)])
                         assert torch.equal(recv_topk_weights_clone, recv_worst_topk_weights[:recv_x.size(0)])
-                        assert torch.all(recv_worst_topk_idx[recv_x.size(0):] == -1).item()
+                        assert torch.all(recv_worst_topk_idx[recv_x.size(0):] == num_experts).item()
 
                     # Test cached dispatch (must without top-k staffs)
                     if not with_topk:

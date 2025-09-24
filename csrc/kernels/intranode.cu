@@ -344,6 +344,7 @@ dispatch(int4* recv_x, float* recv_x_scales, int* recv_src_idx, topk_idx_t* recv
         const auto recv_thread_id = thread_id;
         const auto recv_thread_id_in_rank = recv_thread_id % num_threads_per_rank;
         const auto recv_warp_id_in_rank = recv_thread_id_in_rank / 32;
+        const int local_expert_begin = rank * (num_experts / kNumRanks);
         EP_DEVICE_ASSERT(kNumRanks <= 32);
         EP_DEVICE_ASSERT(recv_thread_id >= 0 and num_recv_warps % kNumRanks == 0);
 
@@ -428,7 +429,9 @@ dispatch(int4* recv_x, float* recv_x_scales, int* recv_src_idx, topk_idx_t* recv
                 int token_idx_in_buffer = (cached_channel_head_idx + chunk_idx) % num_recv_buffer_tokens;
                 auto recv_idx = static_cast<int64_t>(total_offset + chunk_idx) * num_topk + token_topk_idx;
                 auto buffer_idx = token_idx_in_buffer * num_topk + token_topk_idx;
-                recv_topk_idx[recv_idx] = ld_nc_global(channel_topk_idx_buffers.buffer() + buffer_idx);
+                auto idx_value = ld_nc_global(channel_topk_idx_buffers.buffer() + buffer_idx);
+                idx_value = idx_value == -1 ? num_experts : idx_value + local_expert_begin;
+                recv_topk_idx[recv_idx] = idx_value;
                 recv_topk_weights[recv_idx] = ld_nc_global(channel_topk_weights_buffers.buffer() + buffer_idx);
             }
 
@@ -453,7 +456,7 @@ dispatch(int4* recv_x, float* recv_x_scales, int* recv_src_idx, topk_idx_t* recv
         }
     }
 
-    // Clean unused `recv_topk_idx` as -1
+    // Clean unused `recv_topk_idx` as num_experts
     if (num_worst_tokens > 0) {
         auto rank_prefix_matrix = static_cast<int*>(buffer_ptrs[rank]);
         const auto num_recv_tokens = rank_prefix_matrix[(kNumRanks - 1) * kNumRanks + rank];
@@ -462,7 +465,7 @@ dispatch(int4* recv_x, float* recv_x_scales, int* recv_src_idx, topk_idx_t* recv
         const auto clean_stride = num_sms * kNumThreads;
         #pragma unroll
         for (int i = clean_start + thread_id; i < clean_end; i += clean_stride)
-            recv_topk_idx[i] = -1;
+            recv_topk_idx[i] = num_experts;
     }
 }
 
